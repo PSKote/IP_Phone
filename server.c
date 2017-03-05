@@ -1,22 +1,18 @@
-/***
- server.c -----
- Play the recorded audio from the file.
- ./server <filename>
-***/
+/*
+** server.c -----
+** When obtained connection from client.
+** will reproduce the audio.
+** ./server <port_number>
+*/
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
-#include <errno.h>
-#include <fcntl.h>
-
-#include <pulse/simple.h>
-#include <pulse/error.h>
-#include <pulse/gccmacro.h>
+#include <fcntl.h>		/* file control options 			*/
+#include <pulse/simple.h>	/* synchronous playback and recording API 	*/
+#include <pulse/error.h>	/* error management 				*/
+#include <pulse/gccmacro.h>	/* GCC attribute macros 			*/
 
 #include <stdio.h>	/* standard I/O routines.               */
 #include <stdlib.h>	/* rand(), macros, etc.                 */
@@ -29,13 +25,15 @@
 #include <unistd.h>	/* fork()                               */
 #include <signal.h>	/* handle signals			*/
 
-#define BUFSIZE 1024
+#define BUFSIZE 1024	/* buffer size for data 		*/
 
 #define BACKLOG 10	/* clients waiting is queue		*/
 
-int s2;
+int s2;			/* socket 				*/
 
-void my_handler_for_sigint(int signumber)//signal handler
+/* signal Handler */
+void 
+my_handler_for_sigint(int signumber)
 {
   	char ans[2];
   	if (signumber == SIGINT)
@@ -64,14 +62,14 @@ int main(int argc, char*argv[]) {
 	struct sockaddr_in server, client;
 	struct sigaction sa;
 
-    	/* The Sample format to use */
+    	/* the Sample format to use */
     	static const pa_sample_spec ss = {
         	.format = PA_SAMPLE_S16LE,
         	.rate = 44100,
         	.channels = 2
     	};
 
-    	pa_simple *saa = NULL;
+    	pa_simple *s = NULL;
     	int ret = 1;
     	int error;
 
@@ -91,7 +89,7 @@ int main(int argc, char*argv[]) {
 		exit(1);
 	}
 
-	/* listen to 5 clients */
+	/* listen to 10 clients */
 	if (listen(sock, BACKLOG) == -1) 
 	{
 		perror("listen");
@@ -99,12 +97,12 @@ int main(int argc, char*argv[]) {
 	}
 
 
-//registering the signal handler
-if (signal(SIGINT, my_handler_for_sigint) == SIG_ERR)
-      printf("\ncan't catch SIGINT\n");
+	/* registering the signal handler */
+	if (signal(SIGINT, my_handler_for_sigint) == SIG_ERR)
+      		printf("\ncan't catch SIGINT\n");
 
-    	/* Create a new playback stream */
-    	if (!(saa = pa_simple_new(NULL, argv[0], PA_STREAM_PLAYBACK, NULL, "playback", &ss, NULL, NULL, &error))) 
+    	/* create a new playback stream */
+    	if (!(s = pa_simple_new(NULL, argv[0], PA_STREAM_PLAYBACK, NULL, "playback", &ss, NULL, NULL, &error))) 
 	{
         	fprintf(stderr, __FILE__": pa_simple_new() failed: %s\n", pa_strerror(error));
         	goto finish;
@@ -132,7 +130,7 @@ if (signal(SIGINT, my_handler_for_sigint) == SIG_ERR)
 			#if 0
         		pa_usec_t latency;
 
-        		if ((latency = pa_simple_get_latency(saa, &error)) == (pa_usec_t) -1) {
+        		if ((latency = pa_simple_get_latency(s, &error)) == (pa_usec_t) -1) {
             			fprintf(stderr, __FILE__": pa_simple_get_latency() failed: %s\n", pa_strerror(error));
             			goto finish;
         		}
@@ -149,7 +147,7 @@ if (signal(SIGINT, my_handler_for_sigint) == SIG_ERR)
 			}
 */
 
-        		/* Read some data ... */
+        		/* read some data */
         		if ((r = read(s2, bufs, sizeof(bufs))) <= 0) 
 			{
             			if (r == 0) /* EOF */
@@ -159,7 +157,7 @@ if (signal(SIGINT, my_handler_for_sigint) == SIG_ERR)
             			goto finish;
        	 		}
 
-        		if (pa_simple_write(saa, bufs, (size_t) r, &error) < 0) 
+        		if (pa_simple_write(s, bufs, (size_t) r, &error) < 0) 
 			{
             			fprintf(stderr, __FILE__": pa_simple_write() failed: %s\n", pa_strerror(error));
             			goto finish;
@@ -168,8 +166,8 @@ if (signal(SIGINT, my_handler_for_sigint) == SIG_ERR)
 	}
 
 
-    	/* Make sure that every single sample was played */
-    	if (pa_simple_drain(saa, &error) < 0) 
+    	/* make sure that every single sample was played */
+    	if (pa_simple_drain(s, &error) < 0) 
 	{
         	fprintf(stderr, __FILE__": pa_simple_drain() failed: %s\n", pa_strerror(error));
         	goto finish;
@@ -177,9 +175,10 @@ if (signal(SIGINT, my_handler_for_sigint) == SIG_ERR)
 
     	ret = 0;
 
+	/* close and free the connection to the server */
 	finish:
-    	if (saa)
-        	pa_simple_free(saa);
+    	if (s)
+        	pa_simple_free(s);
 
     	return ret;
 
