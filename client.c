@@ -30,11 +30,59 @@
 
 #define BUFSIZE 1024
 
+int sock;
+
+void my_handler_for_sigint(int signumber)//signal handler
+{
+  	char ans[2];
+  	if (signumber == SIGINT)
+  	{
+    		printf("received SIGINT\n");
+    		printf("Program received a CTRL-C\n");
+    		printf("Terminate Y/N : "); 
+    		scanf("%s", ans);
+    		if (strcmp(ans,"Y") == 0)
+    		{
+       			printf("Exiting ....\n");
+       			close(sock);       
+       			exit(0); 
+    		}
+    		else
+    		{
+       			printf("Continung ..\n");
+    		}
+  	}
+}
+
+/* A simple routine calling UNIX write() in a loop */
+static ssize_t loop_write(int fd, const void*data, size_t size) {
+    ssize_t ret = 0;
+
+    while (size > 0) {
+        ssize_t r;
+
+        if ((r = write(fd, data, size)) < 0)
+            return r;
+
+        if (r == 0)
+            break;
+
+        ret += r;
+        data = (const uint8_t*) data + r;
+        size -= (size_t) r;
+    }
+
+    return ret;
+}
+
 int main(int argc, char*argv[]) 
 {
 
+     /* Registering the Signal handler */
+  if (signal(SIGINT, my_handler_for_sigint) == SIG_ERR)
+      printf("\ncan't catch SIGINT\n");
 
-	int sock, t, len;
+	int t, len;
 	struct sockaddr_in client;
 	//char str[MAXDATASIZE];		/* buffer for message */
 
@@ -62,13 +110,12 @@ int main(int argc, char*argv[])
         	.rate = 44100,
         	.channels = 2
     	};
-    	pa_simple *s = NULL;
+    	pa_simple *sc = NULL;
     	int ret = 1;
     	int error;
-        uint8_t buf[BUFSIZE];
 
     	/* Create the recording stream */
-    	if (!(s = pa_simple_new(NULL, argv[0], PA_STREAM_RECORD, NULL, "record", &ss, NULL, NULL, &error))) 
+    	if (!(sc = pa_simple_new(NULL, argv[0], PA_STREAM_RECORD, NULL, "record", &ss, NULL, NULL, &error))) 
 	{
         	fprintf(stderr, __FILE__": pa_simple_new() failed: %s\n", pa_strerror(error));
         	goto finish;
@@ -79,27 +126,28 @@ int main(int argc, char*argv[])
 
     	for (;;) 
 	{
+	        uint8_t buf[BUFSIZE];
 
         	/* Record some data ... */
-        	if (pa_simple_read(s, buf, sizeof(buf), &error) < 0) 
+        	if (pa_simple_read(sc, buf, sizeof(buf), &error) < 0) 
 		{
             		fprintf(stderr, __FILE__": pa_simple_read() failed: %s\n", pa_strerror(error));
             		goto finish;
         	}
 
-		if (send(sock, buf, strlen(buf), 0) == -1) 
+		if (loop_write(sock, buf, sizeof(buf)) != sizeof(buf)) 
 		{
-			perror("send");
-			exit(1);
-		}
+            		fprintf(stderr, __FILE__": write() failed: %s\n", strerror(errno));
+           		goto finish;
+        	}
     	}
 
     	ret = 0;
 
 	finish:
-	close(sock);
-    	if (s)
-        	pa_simple_free(s);
+    	if (sc)
+        	pa_simple_free(sc);
 
     	return ret;
+	close(sock);
 }
