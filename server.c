@@ -55,7 +55,8 @@ my_handler_for_sigint(int signumber)
   	}
 }
 
-int main(int argc, char*argv[]) {
+int main(int argc, char*argv[]) 
+{
 
 
 	int sock, t, len;
@@ -119,7 +120,7 @@ int main(int argc, char*argv[]) {
 			perror("accept");
 			exit(1);
 		}
-		printf("Connected. Start conversation\n");
+		printf("Connected. Conversation in progress\n");
 	
 		for(;;)
 		{
@@ -139,25 +140,14 @@ int main(int argc, char*argv[]) {
 			#endif
 
 			/* receiving message from client */
-/*			n = recv(s2, bufs, sizeof(bufs), 0);
+			n = recv(s2, bufs, sizeof(bufs), 0);
 			if(n == -1)
 			{
         			perror("recv");
        				exit(1);
 			}
-*/
 
-        		/* read some data */
-        		if ((r = read(s2, bufs, sizeof(bufs))) <= 0) 
-			{
-            			if (r == 0) /* EOF */
-                			break;
-
-            			fprintf(stderr, __FILE__": read() failed: %s\n", strerror(errno));
-            			goto finish;
-       	 		}
-
-        		if (pa_simple_write(s, bufs, (size_t) r, &error) < 0) 
+        		if (pa_simple_write(s, bufs, sizeof(bufs), &error) < 0) 
 			{
             			fprintf(stderr, __FILE__": pa_simple_write() failed: %s\n", pa_strerror(error));
             			goto finish;
