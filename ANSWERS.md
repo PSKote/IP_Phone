@@ -1,4 +1,4 @@
-1. The problems you found
+Q1. The problems you found
 
 Ans.: Because the Chat Messenger was already built it was only few changes and additions that had to be made in in terms of APIs. APIs where easy to understand as it was well documented. But, at some places I did go wrong. The problems faced were:
 
@@ -9,7 +9,7 @@ b) There was an echo effect and noise when I tried loop-back and used internal m
 c) There is a delay from when the audio is being sent from the client and being played by the server.
 
 
-2. Your approach to debug it
+Q2. Your approach to debug it
 
 Ans.:
 
@@ -20,17 +20,17 @@ b) To avoid the echo effect and noise I used an external mic.
 c) I’m still working on why delay is being produced.
 
 
-3. How you had solved it
+Q3. How you had solved it
 
 Ans.: The issue caused while using functions where solved using GDB debugger. Using debugger helped to find the error quickly and solve it.
 
 
-4. What are the problems which are still not solved
+Q4. What are the problems which are still not solved
 
 Ans.: The delay that is caused between speaking and playing the audio is still not solved.
 
 
-5. Improvements to make appliance better
+Q5. Improvements to make appliance better
 
 Ans.: 
 
