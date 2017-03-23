@@ -1,7 +1,8 @@
 /*
 ** client.c -----
 ** Sends the audio to server to which it is connected. 
-** Uses Periodic Scheduling to sample the audio. Sampling rate is 1sec.
+** Implemented using Periodic Scheduling to sample the audio. 
+** Sampling rate is 1sec.
 ** ./client <IP_address> <port_number>
 */
 
