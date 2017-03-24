@@ -2,7 +2,8 @@
 ** server.c -----
 ** When obtained connection from client.
 ** will reproduce the audio.
-** Uses Periodic Scheduling to reproduce the audio received. Sampling rate is 1sec.
+** Uses Periodic Scheduling to reproduce the audio received. 
+** Sampling rate is 1sec. Bandwidth = 1.365kbps
 ** ./server <port_number>
 */
 
@@ -84,7 +85,6 @@ periodic_task  (int signum)
 
 			fprintf(stderr, "%0.0f usec    \r", (float)latency);
 			#endif
-
 			/* receiving message from client */
 			n = recv(s2, bufs, sizeof(bufs), 0);
 			if(n == -1)
@@ -118,13 +118,13 @@ int main(int argc, char*argv[])
  	sa.sa_handler = &periodic_task ;
  	sigaction (SIGVTALRM, &sa, NULL);
 
- 	/* Configure the timer to expire after 1 sec... */
+ 	/* Configure the timer to expire after 6 sec... */
  	timer.it_value.tv_sec = 0;
- 	timer.it_value.tv_usec = 1000;
+ 	timer.it_value.tv_usec = 6000;
 
- 	/* ... and every 1 sec after that. */
+ 	/* ... and every 6 sec after that. */
  	timer.it_interval.tv_sec = 0;
- 	timer.it_interval.tv_usec = 1000;
+ 	timer.it_interval.tv_usec = 6000;
 
  	/* Start a virtual timer. It counts down whenever this process is    executing. */
  	setitimer (ITIMER_VIRTUAL, &timer, NULL);
