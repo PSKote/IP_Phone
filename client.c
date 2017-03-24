@@ -2,7 +2,7 @@
 ** client.c -----
 ** Sends the audio to server to which it is connected. 
 ** Implemented using Periodic Scheduling to sample the audio. 
-** Sampling rate is 1sec.
+** Sampling rate is 1sec. Bandwidth = 1.365kbps
 ** ./client <IP_address> <port_number>
 */
 
@@ -99,7 +99,6 @@ periodic_task  (int signum)
 					pa_simple_free(sc);
 				exit(1);
 			}
-
 			/* writing audio data to socket */
 			if (loop_write(sock, buf, sizeof(buf)) != sizeof(buf)) 
 			{
@@ -123,13 +122,13 @@ int main(int argc, char*argv[])
  	sa.sa_handler = &periodic_task ;
  	sigaction (SIGVTALRM, &sa, NULL);
 
- 	/* Configure the timer to expire after 1 sec... */
+ 	/* Configure the timer to expire after 6 sec... */
  	timer.it_value.tv_sec = 0;
- 	timer.it_value.tv_usec = 1000;
+ 	timer.it_value.tv_usec = 6000;
 
- 	/* ... and every 1 sec after that. */
+ 	/* ... and every 6 sec after that. */
  	timer.it_interval.tv_sec = 0;
- 	timer.it_interval.tv_usec = 1000;
+ 	timer.it_interval.tv_usec = 6000;
 
  	/* Start a virtual timer. It counts down whenever this process is    executing. */
  	setitimer (ITIMER_VIRTUAL, &timer, NULL);
