@@ -27,6 +27,8 @@
 #include <signal.h>	/* handle signals			*/
 #include <sys/time.h>	/* timer				*/
 
+#include "g711.c"
+
 #define BUFSIZE 1024	/* buffer size for data 		*/
 
 int sock;		/* socket 				*/
@@ -69,46 +71,57 @@ periodic_task  (int signum)
 {
 	char ans[2];
 	uint8_t buf[BUFSIZE];
-	switch(signum)
+	size_t i;
+    	uint8_t tempbuf_8;
+    	uint8_t tempbuf_16;
+    	uint8_t outbuf[BUFSIZE]; 
+
+	if (pa_simple_read(sc, buf, sizeof(buf), &error) < 0) 
 	{
-		case SIGINT:
-		  	if (signum == SIGINT)
-		  	{
-		    		printf("received SIGINT\n");
-		    		printf("Program received a CTRL-C\n");
-		    		printf("Terminate Y/N : "); 
-		    		scanf("%s", ans);
-		    		if (strcmp(ans,"Y") == 0)
-		    		{
-		       			printf("Exiting ....\n");
-		       			close(sock);       
-		       			exit(0); 
-		    		}
-		    		else
-		    		{
-		       			printf("Continung ..\n");
-		    		}
-		  	}
-			break;
-		case SIGVTALRM:
-			/* record some data */
-			if (pa_simple_read(sc, buf, sizeof(buf), &error) < 0) 
-			{
-			   	fprintf(stderr, __FILE__": pa_simple_read() failed: %s\n", pa_strerror(error));
-			   	if (sc)
-					pa_simple_free(sc);
-				exit(1);
-			}
-			/* writing audio data to socket */
-			if (loop_write(sock, buf, sizeof(buf)) != sizeof(buf)) 
-			{
-			    	fprintf(stderr, __FILE__": write() failed: %s\n", strerror(errno));
-			   	if (sc)
-					pa_simple_free(sc);
-				exit(1);
-			}
-			break;
+	   	fprintf(stderr, __FILE__": pa_simple_read() failed: %s\n", pa_strerror(error));
+	   	if (sc)
+			pa_simple_free(sc);
+		exit(1);
 	}
+	for (i=0; i < BUFSIZE; ++i)        
+        {
+            	tempbuf_16 = buf[i];
+            	tempbuf_8 =  Snack_Lin2Alaw(tempbuf_16);
+            	outbuf[i] = tempbuf_8;
+       }			
+
+	/* writing audio data to socket */
+	if (loop_write(sock, outbuf, sizeof(outbuf)) != sizeof(outbuf)) 
+	{
+	    	fprintf(stderr, __FILE__": write() failed: %s\n", strerror(errno));
+	   	if (sc)
+			pa_simple_free(sc);
+		exit(1);
+	}
+}
+
+/* signal Handler */
+void 
+my_handler_for_sigint(int signumber)
+{
+  	char ans[2];
+  	if (signumber == SIGINT)
+  	{
+    		printf("received SIGINT\n");
+    		printf("Program received a CTRL-C\n");
+    		printf("Terminate Y/N : "); 
+    		scanf("%s", ans);
+    		if (strcmp(ans,"Y") == 0)
+    		{
+       			printf("Exiting ....\n");
+       			close(sock);       
+       			exit(0); 
+    		}
+    		else
+    		{
+       			printf("Continung ..\n");
+    		}
+  	}
 }
 
 int main(int argc, char*argv[]) 
@@ -134,8 +147,8 @@ int main(int argc, char*argv[])
  	setitimer (ITIMER_VIRTUAL, &timer, NULL);
 
      	/* registering the Signal handler */
-  	if (signal(SIGINT, periodic_task) == SIG_ERR)
-      		printf("\ncan't catch SIGINT\n");
+  	if (signal(SIGINT, my_handler_for_sigint) == SIG_ERR)
+    		printf("\ncan't catch SIGINT\n");
 
 
 	int t, len;
