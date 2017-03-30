@@ -28,6 +28,8 @@
 #include <signal.h>	/* handle signals			*/
 #include <sys/time.h>	/* timer				*/
 
+#include "g711.c"
+
 #define BUFSIZE 1024	/* buffer size for data 		*/
 
 #define BACKLOG 10	/* clients waiting is queue		*/
@@ -53,55 +55,66 @@ periodic_task  (int signum)
 	char ans[2];
 	uint8_t bufs[BUFSIZE];
 	ssize_t r;
-	switch(signum)
-	{
-		case SIGINT:
-		  	if (signum == SIGINT)
-		  	{
-		    		printf("received SIGINT\n");
-		    		printf("Program received a CTRL-C\n");
-		    		printf("Terminate Y/N : "); 
-		    		scanf("%s", ans);
-		    		if (strcmp(ans,"Y") == 0)
-		    		{
-		       			printf("Exiting ....\n");
-		       			close(sock);       
-		       			exit(0); 
-		    		}
-		    		else
-		    		{
-		       			printf("Continung ..\n");
-		    		}
-		  	}
-			break;
-		case SIGVTALRM:		
-			#if 0
-			pa_usec_t latency;
+ 	uint8_t outbuf[BUFSIZE];          
+    	size_t i;
+    	uint8_t tempbuf_8;
+    	uint8_t tempbuf_16;	
+	#if 0
+	pa_usec_t latency;
 
-			if ((latency = pa_simple_get_latency(s, &error)) == (pa_usec_t) -1) {
-				fprintf(stderr, __FILE__": pa_simple_get_latency() failed: %s\n", pa_strerror(error));
-				goto finish;
-			}
-
-			fprintf(stderr, "%0.0f usec    \r", (float)latency);
-			#endif
-			/* receiving message from client */
-			n = recv(s2, bufs, sizeof(bufs), 0);
-			if(n == -1)
-			{
-				perror("recv");
-				exit(1);
-			}
-
-			if (pa_simple_write(s, bufs, sizeof(bufs), &error) < 0) 
-			{
-				fprintf(stderr, __FILE__": pa_simple_write() failed: %s\n", pa_strerror(error));
-				if (s)
-					pa_simple_free(s);
-				exit(1);
-			}
-			break;
+	if ((latency = pa_simple_get_latency(s, &error)) == (pa_usec_t) -1) {
+		fprintf(stderr, __FILE__": pa_simple_get_latency() failed: %s\n", pa_strerror(error));
+		goto finish;
 	}
+
+	fprintf(stderr, "%0.0f usec    \r", (float)latency);
+	#endif
+	/* receiving message from client */
+	n = recv(s2, bufs, sizeof(bufs), 0);
+	if(n == -1)
+	{
+		perror("recv");
+		exit(1);
+	}
+
+	for (i=0; i < BUFSIZE; ++i)               // only the data actually read
+        {
+            	tempbuf_8 = bufs[i];
+            	tempbuf_16 = Snack_Alaw2Lin(tempbuf_8);
+            	outbuf[i] = tempbuf_16;
+        }
+
+	if (pa_simple_write(s, outbuf, sizeof(outbuf), &error) < 0) 
+	{
+		fprintf(stderr, __FILE__": pa_simple_write() failed: %s\n", pa_strerror(error));
+		if (s)
+			pa_simple_free(s);
+		exit(1);
+	}
+}
+
+/* signal Handler */
+void 
+my_handler_for_sigint(int signumber)
+{
+  	char ans[2];
+  	if (signumber == SIGINT)
+  	{
+    		printf("received SIGINT\n");
+    		printf("Program received a CTRL-C\n");
+    		printf("Terminate Y/N : "); 
+    		scanf("%s", ans);
+    		if (strcmp(ans,"Y") == 0)
+    		{
+       			printf("Exiting ....\n");
+       			close(sock);       
+       			exit(0); 
+    		}
+    		else
+    		{
+       			printf("Continung ..\n");
+    		}
+  	}
 }
 
 int main(int argc, char*argv[]) 
@@ -152,9 +165,9 @@ int main(int argc, char*argv[])
 		exit(1);
 	}
 
-	/* registering the signal handler */
-	if (signal(SIGINT, periodic_task) == SIG_ERR)
-      		printf("\ncan't catch SIGINT\n");
+     	/* registering the Signal handler */
+  	if (signal(SIGINT, my_handler_for_sigint) == SIG_ERR)
+    		printf("\ncan't catch SIGINT\n");
 
     	/* create a new playback stream */
     	if (!(s = pa_simple_new(NULL, argv[0], PA_STREAM_PLAYBACK, NULL, "playback", &ss, NULL, NULL, &error))) 
