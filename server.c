@@ -55,10 +55,10 @@ periodic_task  (int signum)
 	char ans[2];
 	uint8_t bufs[BUFSIZE];
 	ssize_t r;
- 	uint8_t outbuf[BUFSIZE];          
+ 	uint16_t outbuf[BUFSIZE];          
     	size_t i;
     	uint8_t tempbuf_8;
-    	uint8_t tempbuf_16;	
+    	uint16_t tempbuf_16;	
 	#if 0
 	pa_usec_t latency;
 
