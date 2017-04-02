@@ -70,10 +70,10 @@ void
 periodic_task  (int signum)
 {
 	char ans[2];
-	uint8_t buf[BUFSIZE];
+	uint16_t buf[BUFSIZE];
 	size_t i;
     	uint8_t tempbuf_8;
-    	uint8_t tempbuf_16;
+    	uint16_t tempbuf_16;
     	uint8_t outbuf[BUFSIZE]; 
 
 	if (pa_simple_read(sc, buf, sizeof(buf), &error) < 0) 
