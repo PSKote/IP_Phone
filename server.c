@@ -3,7 +3,7 @@
 ** When obtained connection from client.
 ** will reproduce the audio.
 ** Uses Periodic Scheduling to reproduce the audio received. 
-** Sampling rate is 1sec. Bandwidth = 1.365kbps
+** Sampling rate is 1sec. Bandwidth = 0.685Mbps
 ** ./server <port_number>
 */
 
@@ -133,11 +133,11 @@ int main(int argc, char*argv[])
 
  	/* Configure the timer to expire after 6 sec... */
  	timer.it_value.tv_sec = 0;
- 	timer.it_value.tv_usec = 6000;
+ 	timer.it_value.tv_usec = 12000;
 
  	/* ... and every 6 sec after that. */
  	timer.it_interval.tv_sec = 0;
- 	timer.it_interval.tv_usec = 6000;
+ 	timer.it_interval.tv_usec = 12000;
 
  	/* Start a virtual timer. It counts down whenever this process is    executing. */
  	setitimer (ITIMER_VIRTUAL, &timer, NULL);
