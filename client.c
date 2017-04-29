@@ -27,11 +27,25 @@
 #include <signal.h>	/* handle signals			*/
 #include <sys/time.h>	/* timer				*/
 
-#include "g711.c"
-
 #define BUFSIZE 1024	/* buffer size for data 		*/
 
 int sock;		/* socket 				*/
+
+struct rtp_header 
+{
+	uint8_t v:2;
+	uint8_t p:1;
+	uint8_t x:1;
+	uint8_t cc:4;
+	uint8_t m:1;
+	uint8_t pt:7;
+	uint16_t seqno;
+	uint32_t ts;
+	uint32_t ssrc;
+	uint8_t buf[BUFSIZE]; 
+}rtp_packet;
+
+uint16_t seqcount;
 
 /* the sample type to use */
 static const pa_sample_spec ss = {
@@ -44,7 +58,7 @@ int ret = 1;
 int error;
 
 /* A simple routine calling UNIX write() in a loop */
-static ssize_t loop_write(int fd, const void*data, size_t size) 
+static ssize_t loop_write(int fd, struct rtp_header *data, size_t size) 
 {
     	ssize_t ret = 0;
 
@@ -59,7 +73,7 @@ static ssize_t loop_write(int fd, const void*data, size_t size)
             		break;
 
         	ret += r;
-        	data = (const uint8_t*) data + r;
+        	data = (struct rtp_header*) data + r;
         	size -= (size_t) r;
     	}	
 
@@ -69,29 +83,37 @@ static ssize_t loop_write(int fd, const void*data, size_t size)
 void 
 periodic_task  (int signum)
 {
-	char ans[2];
-	uint16_t buf[BUFSIZE];
-	size_t i;
-    	uint8_t tempbuf_8;
-    	uint16_t tempbuf_16;
-    	uint8_t outbuf[BUFSIZE]; 
-
-	if (pa_simple_read(sc, buf, sizeof(buf), &error) < 0) 
+	if (pa_simple_read(sc, rtp_packet.buf, sizeof(rtp_packet.buf), &error) < 0) 
 	{
 	   	fprintf(stderr, __FILE__": pa_simple_read() failed: %s\n", pa_strerror(error));
 	   	if (sc)
 			pa_simple_free(sc);
 		exit(1);
 	}
-	for (i=0; i < BUFSIZE; ++i)        
-        {
-            	tempbuf_16 = buf[i];
-            	tempbuf_8 =  Snack_Lin2Alaw(tempbuf_16);
-            	outbuf[i] = tempbuf_8;
-       }			
+
+	rtp_packet.v = 2;
+	rtp_packet.p = 0;
+	rtp_packet.x = 0;
+	rtp_packet.cc = 1;
+	rtp_packet.m = 0;
+	rtp_packet.pt =	2;
+
+	struct timeval tv;
+	time_t curtime;
+	gettimeofday(&tv, NULL); 
+	rtp_packet.ts=tv.tv_sec;
+	
+	rtp_packet.seqno = seqcount;
+	seqcount++;
+	if (seqcount == 65536)
+	{
+		seqcount = 0;
+	}
+
+	rtp_packet.ssrc = 8000;			
 
 	/* writing audio data to socket */
-	if (loop_write(sock, outbuf, sizeof(outbuf)) != sizeof(outbuf)) 
+	if (loop_write(sock, &rtp_packet, sizeof(rtp_packet)) != sizeof(rtp_packet)) 
 	{
 	    	fprintf(stderr, __FILE__": write() failed: %s\n", strerror(errno));
 	   	if (sc)
@@ -137,11 +159,11 @@ int main(int argc, char*argv[])
 
  	/* Configure the timer to expire after 6 sec... */
  	timer.it_value.tv_sec = 0;
- 	timer.it_value.tv_usec = 12000;
+ 	timer.it_value.tv_usec = 6000;
 
  	/* ... and every 6 sec after that. */
  	timer.it_interval.tv_sec = 0;
- 	timer.it_interval.tv_usec = 12000;
+ 	timer.it_interval.tv_usec = 6000;
 
  	/* Start a virtual timer. It counts down whenever this process is    executing. */
  	setitimer (ITIMER_VIRTUAL, &timer, NULL);
@@ -170,9 +192,6 @@ int main(int argc, char*argv[])
 		perror("connect");
 		exit(1);
 	}
-
-
-
 
     	/* create the recording stream */
     	if (!(sc = pa_simple_new(NULL, argv[0], PA_STREAM_RECORD, NULL, "record", &ss, NULL, NULL, &error))) 

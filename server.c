@@ -38,6 +38,20 @@ int s2;			/* socket 				*/
 int n;
 int sock;
 
+struct rtp_header 
+{
+	uint8_t v:2;
+	uint8_t p:1;
+	uint8_t x:1;
+	uint8_t cc:4;
+	uint8_t m:1;
+	uint8_t pt:7;
+	uint16_t seqno;
+	uint32_t ts;
+	uint32_t ssrc;
+	uint8_t bufs[BUFSIZE]; 
+}rtp_packet;
+
 /* the Sample format to use */
 static const pa_sample_spec ss = {
 	.format = PA_SAMPLE_S16LE,
@@ -52,13 +66,7 @@ int error;
 void 
 periodic_task  (int signum)
 {
-	char ans[2];
-	uint8_t bufs[BUFSIZE];
-	ssize_t r;
- 	uint16_t outbuf[BUFSIZE];          
-    	size_t i;
-    	uint8_t tempbuf_8;
-    	uint16_t tempbuf_16;	
+		
 	#if 0
 	pa_usec_t latency;
 
@@ -70,21 +78,16 @@ periodic_task  (int signum)
 	fprintf(stderr, "%0.0f usec    \r", (float)latency);
 	#endif
 	/* receiving message from client */
-	n = recv(s2, bufs, sizeof(bufs), 0);
+	n = recv(s2, &rtp_packet, sizeof(rtp_packet), 0);
 	if(n == -1)
 	{
 		perror("recv");
 		exit(1);
 	}
 
-	for (i=0; i < BUFSIZE; ++i)               // only the data actually read
-        {
-            	tempbuf_8 = bufs[i];
-            	tempbuf_16 = Snack_Alaw2Lin(tempbuf_8);
-            	outbuf[i] = tempbuf_16;
-        }
+	printf("Sequence Number is: %d\nSent at time %d\n\n", rtp_packet.seqno, rtp_packet.ts);
 
-	if (pa_simple_write(s, outbuf, sizeof(outbuf), &error) < 0) 
+	if (pa_simple_write(s, rtp_packet.bufs, sizeof(rtp_packet.bufs), &error) < 0) 
 	{
 		fprintf(stderr, __FILE__": pa_simple_write() failed: %s\n", pa_strerror(error));
 		if (s)
@@ -133,11 +136,11 @@ int main(int argc, char*argv[])
 
  	/* Configure the timer to expire after 6 sec... */
  	timer.it_value.tv_sec = 0;
- 	timer.it_value.tv_usec = 12000;
+ 	timer.it_value.tv_usec = 6000;
 
  	/* ... and every 6 sec after that. */
  	timer.it_interval.tv_sec = 0;
- 	timer.it_interval.tv_usec = 12000;
+ 	timer.it_interval.tv_usec = 6000;
 
  	/* Start a virtual timer. It counts down whenever this process is    executing. */
  	setitimer (ITIMER_VIRTUAL, &timer, NULL);
