@@ -103,7 +103,7 @@ int main(int argc, char *argv[])
 	
 	Init_Socket();
 	RTP_Create(&cid);
-	RTP_Add_Send_Addr(cid, "127.0.0.1", UDP_PORT, 6);
+	RTP_Add_Send_Addr(cid, argv[1], UDP_PORT, 6);
 	Set_Extension_Profile(cid, 27);
 	Add_Extension(cid, 123456);
 	Add_Extension(cid, 654321);
