@@ -1,5 +1,5 @@
 /*
-VOIP+G711+RTP Client Side
+ This is server of VoIP with RTP and G711 codec
 */
 
 #include <sys/types.h>
@@ -24,12 +24,7 @@ VOIP+G711+RTP Client Side
 #include <signal.h>
 #include <sys/timerfd.h>
 #include <time.h>
-#include <stdint.h> 
-
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
+#include <stdint.h>
 #include<sys/types.h>
 #include<sys/stat.h>
 #include<fcntl.h>
@@ -41,6 +36,10 @@ VOIP+G711+RTP Client Side
 #include <pulse/simple.h>
 #include <pulse/error.h>
 #include <pulse/gccmacro.h>
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #define handle_error(msg) \
 do { perror(msg); exit(EXIT_FAILURE); } while (0)
@@ -227,7 +226,7 @@ void us_event(struct us *us, int cid, int *len,int ac, char **av)
 	/*Pulse Audio Specifications */
 	static const pa_sample_spec ss = {
 	.format = PA_SAMPLE_S16LE,
-	.rate = 8000,
+	.rate = 44100,
 	.channels = 2
 	};
 	pa_simple *s1 = NULL;

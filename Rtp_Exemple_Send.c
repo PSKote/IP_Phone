@@ -1,5 +1,5 @@
 /*
-VOIP Implementation using RTP 
+ This is client of VoIP with RTP and G711 codec
 */
 
 #include <sys/types.h>
@@ -24,13 +24,10 @@ VOIP Implementation using RTP
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
-#include<signal.h>
+#include <signal.h>
 #include <arpa/inet.h>
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-#include<sys/stat.h>
-#include<fcntl.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <sys/timerfd.h>
 #include <time.h>
 #include "g711.c"
@@ -39,6 +36,10 @@ VOIP Implementation using RTP
 #include <pulse/simple.h>
 #include <pulse/error.h>
 #include <pulse/gccmacro.h>
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #define BUFSIZE 1024
 short buf[BUFSIZE];
@@ -86,7 +87,7 @@ int main(int argc, char *argv[])
 	/* Pulse audio releated specifications */
 	static const pa_sample_spec ss = {
 	.format = PA_SAMPLE_S16LE,
-	.rate = 8000,
+	.rate = 44100,
 	.channels = 2
 	};
 	pa_simple *s1 = NULL;
